@@ -115,24 +115,31 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def display(self):
-        totalmin = self.todayLogging["总计时"]//60
+        totalmin = self.todayLogging["总计时"]
         totalhour = totalmin//60
-        workmin = self.todayLogging['技术任务']//60
+        workmin = self.todayLogging['技术任务']
         workhour = workmin//60
-        studymin = self.todayLogging['文献阅读']//60
+        studymin = self.todayLogging['文献阅读']
         studyhour = studymin//60
-        moyumin = self.todayLogging['日常任务']//60
+        moyumin = self.todayLogging['日常任务']
         moyuhour = moyumin//60
-        playmin = self.todayLogging['服务任务']//60
+        playmin = self.todayLogging['服务任务']
         playhour = playmin//60
-        self.label_0.setText("今天是%s\n\n技术任务:\t%dh %dmin %ds\n文献阅读:\t%dh %dmin %ds\n日常任务:\t%dh %dmin %ds\n服务任务:\t%dh %dmin %ds\n总计时:\t\t%dh %dmin %ds\n"
+        self.label_0.setText("""
+今天是%s\n\n\
+技术任务:\t%dh %dmin\t\t%.1f
+文献阅读:\t%dh %dmin\t\t%.1f
+日常任务:\t%dh %dmin\t\t%.1f
+服务任务:\t%dh %dmin\t\t%.1f
+总计时:\t\t%dh %dmin\t\t%.1f
+"""
                              % (
                                  self.date,
-                                 workhour, workmin % 60, self.todayLogging['技术任务'] % 60,
-                                 studyhour, studymin % 60, self.todayLogging['文献阅读'] % 60,
-                                 moyuhour, moyumin % 60, self.todayLogging['日常任务'] % 60,
-                                 playhour, playmin % 60, self.todayLogging['服务任务'] % 60,
-                                 totalhour, totalmin % 60, self.todayLogging["总计时"] % 60,
+                                 workhour, workmin % 60, workmin/25,
+                                 studyhour, studymin % 60, studymin/25,
+                                 moyuhour, moyumin % 60, moyumin/25,
+                                 playhour, playmin % 60, playmin/25,
+                                 totalhour, totalmin % 60, totalmin/25,
                              ))
 
     def onButtonClick(self):
@@ -140,20 +147,25 @@ class Ui_MainWindow(object):
             # Start the counting
             self.button1.setText('结束')
             self.w.show()
+            self.w.begin_work()
             self.start_time = time.time()
+            self.start_time_l = time.localtime()
             self.label_1.setText('正在计时')
             self.on = True
         else:
             # Stop the counting and take records
             self.button1.setText('开始')
-            self.w.hide()
+            self.w.show()
+            # self.w.hide()
+            self.w.begin_rest()
             self.label_1.setText('暂停计时')
             self.end_time = time.time()
+            self.end_time_l = time.localtime()
             self.on = False
 
-            self.todayLogging["总计时"] += self.end_time-self.start_time
+            self.todayLogging["总计时"] += (self.end_time-self.start_time)//60
             self.todayLogging[self.classBox.currentText()
-                              ] += self.end_time-self.start_time
+                              ] += (self.end_time-self.start_time)//60
             self.display()
 
             cur = self.con.cursor()
@@ -162,9 +174,9 @@ class Ui_MainWindow(object):
                 values (?,?,?,?,?,?,?)",
                 (
                     self.date,
-                    self.start_time,
-                    self.end_time,
-                    self.end_time-self.start_time,
+                    f'{self.start_time_l[3]}:{self.start_time_l[4]}',
+                    f'{self.end_time_l[3]}:{self.end_time_l[4]}',
+                    (self.end_time-self.start_time)//60,
                     self.classBox.currentText(),
                     self.targetBox.currentText(),
                     self.taskLine.text()))
@@ -198,11 +210,41 @@ class AnotherWindow(QtWidgets.QWidget):
         self.setLayout(layout)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint |
                             QtCore.Qt.FramelessWindowHint)
+        self.start_time = time.time()
+        self.statusShowTime()
 
+    # https://blog.csdn.net/HG0724/article/details/116308195
+    def showCurrentTime(self, timeLabel):
+        cur_time = time.time()
+        duration = int(cur_time - self.start_time)
+        # 设置系统时间的显示格式
+        timeDisplay = '{:2d}:{:02d}:{:02d}'.format(
+            duration//3600, duration // 60, duration % 60)
+        # print(timeDisplay)
+        # 状态栏显示
+        timeLabel.setText(timeDisplay)
+
+    def statusShowTime(self):
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(lambda: self.showCurrentTime(
+            self.label))  # 这个通过调用槽函数来刷新时间
+        self.timer.start(1000)  # 每隔一秒刷新一次，这里设置为1000ms  即1s
+
+    def begin_work(self):
+        self.start_time = time.time()
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
         self.label.setFont(font)
+        self.label.setStyleSheet("color:red")
+
+    def begin_rest(self):
+        self.start_time = time.time()
+        font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
+        font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
+        self.label.setFont(font)
+        self.label.setStyleSheet("color:green")
 
     # https://blog.csdn.net/FanMLei/article/details/79433229
     def mousePressEvent(self, event):
