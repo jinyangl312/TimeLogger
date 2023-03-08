@@ -23,7 +23,7 @@ class Ui_MainWindow(object):
         self.read_history()
         if self.date not in self.history.keys():
             self.history[self.date] = {
-                '总计时': 0, '学习': 0, '工作': 0, '摸鱼': 0, '玩': 0}
+                '总计时': 0, '文献阅读': 0, '技术任务': 0, '日常任务': 0, '服务任务': 0}
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -49,10 +49,15 @@ class Ui_MainWindow(object):
         self.button1.clicked.connect(self.onButtonClick)
         self.verticalLayout.addWidget(self.button1)
 
-        items = ["学习", "工作", "摸鱼", "玩"]
+        items = [
+            "技术任务",
+            "文献阅读",
+            "日常任务",
+            "服务任务"
+        ]
         self.comboBox = QtWidgets.QComboBox()
         self.comboBox.addItems(items)
-        self.comboBox.setCurrentIndex(1)
+        self.comboBox.setCurrentIndex(0)
         self.verticalLayout.addWidget(self.comboBox)
 
         MainWindow.setCentralWidget(self.centralwidget)
@@ -70,20 +75,23 @@ class Ui_MainWindow(object):
     def display(self):
         totalmin = self.history[self.date]["总计时"]//60
         totalhour = totalmin//60
-        studymin = self.history[self.date]['学习']//60
-        studyhour = studymin//60
-        workmin = self.history[self.date]['工作']//60
+        workmin = self.history[self.date]['技术任务']//60
         workhour = workmin//60
-        moyumin = self.history[self.date]['摸鱼']//60
+        studymin = self.history[self.date]['文献阅读']//60
+        studyhour = studymin//60
+        moyumin = self.history[self.date]['日常任务']//60
         moyuhour = moyumin//60
-        playmin = self.history[self.date]['玩']//60
+        playmin = self.history[self.date]['服务任务']//60
         playhour = playmin//60
-        self.label_0.setText("今天是%s,总计时:%dh %dmin %ds\n学习:%dh %dmin %ds,工作:%dh %dmin %ds\n摸鱼:%dh %dmin %ds,玩:%dh %dmin %ds"
-                             % (self.date, totalhour, totalmin % 60, self.history[self.date]["总计时"] % 60,
-                                studyhour, studymin % 60, self.history[self.date]['学习'] % 60,
-                                workhour, workmin % 60, self.history[self.date]['工作'] % 60,
-                                moyuhour, moyumin % 60, self.history[self.date]['摸鱼'] % 60,
-                                playhour, playmin % 60, self.history[self.date]['玩'] % 60))
+        self.label_0.setText("今天是%s\n\n技术任务:%dh %dmin %ds\n文献阅读:%dh %dmin %ds\n日常任务:%dh %dmin %ds\n服务任务:%dh %dmin %ds\n总计时:%dh %dmin %ds"
+                             % (
+                                 self.date,
+                                 workhour, workmin % 60, self.history[self.date]['技术任务'] % 60,
+                                 studyhour, studymin % 60, self.history[self.date]['文献阅读'] % 60,
+                                 moyuhour, moyumin % 60, self.history[self.date]['日常任务'] % 60,
+                                 playhour, playmin % 60, self.history[self.date]['服务任务'] % 60,
+                                 totalhour, totalmin % 60, self.history[self.date]["总计时"] % 60,
+                             ))
 
     def onButtonClick(self):
         if not self.on:
@@ -99,12 +107,12 @@ class Ui_MainWindow(object):
             self.label_1.setText('已停止计时，快来！')
             self.display()
             self.on = False
-            with open('data.json', 'w') as f:
+            with open('data/data.json', 'w') as f:
                 json.dump(self.history, f)
 
     def read_history(self):
-        if path.exists('data.json'):
-            with open('data.json', 'r') as f:
+        if path.exists('data/data.json'):
+            with open('data/data.json', 'r') as f:
                 self.history = json.load(f)
 
 
