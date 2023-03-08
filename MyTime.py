@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from sys import argv, exit
 from os import path
 import time
@@ -7,9 +7,13 @@ import json
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
+        font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
+        font.setPointSize(16)  # 括号里的数字可以设置成自己想要的字体大小
+
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowTitle('MyTime')
-        MainWindow.resize(800, 600)
+        MainWindow.resize(600, 600)
 
         self.on = False  # 开关标志
         self.t1 = 0  # 前一次计时时间
@@ -29,7 +33,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(190, 150, 421, 241))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 50, 500, 500))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -37,28 +41,63 @@ class Ui_MainWindow(object):
 
         self.label_0 = QtWidgets.QLabel(self.verticalLayoutWidget)
         self.label_0.setObjectName("label_0")
+        self.label_0.setFont(font)
         self.verticalLayout.addWidget(self.label_0)
 
         self.label_1 = QtWidgets.QLabel(self.verticalLayoutWidget)
         self.label_1.setObjectName("label")
         self.verticalLayout.addWidget(self.label_1)
 
-        self.button1 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.button1.setObjectName("pushButton")
-        self.button1.setText('开始')
-        self.button1.clicked.connect(self.onButtonClick)
-        self.verticalLayout.addWidget(self.button1)
-
-        items = [
+        class_items = [
             "技术任务",
             "文献阅读",
             "日常任务",
             "服务任务"
         ]
-        self.comboBox = QtWidgets.QComboBox()
-        self.comboBox.addItems(items)
-        self.comboBox.setCurrentIndex(0)
-        self.verticalLayout.addWidget(self.comboBox)
+        self.classBox = QtWidgets.QComboBox()
+        self.classBox.addItems(class_items)
+        self.classBox.setCurrentIndex(0)
+        self.classBox.setFont(font)
+        self.verticalLayout.addWidget(self.classBox)
+
+        # https://blog.csdn.net/u012828517/article/details/105158680
+        target_items = [
+            "AAAA",
+            "bbbb"
+        ]
+        self.targetBox = QtWidgets.QComboBox()
+        self.targetBox.addItems(target_items)
+        # self.targetBox.setCurrentIndex(0)
+        self.targetBox.setEditable(True)
+        self.targetBox.lineEdit().setPlaceholderText("Target")
+        self.targetBox.setFont(font)
+        self.verticalLayout.addWidget(self.targetBox)
+
+        wordList = [
+            "taska",
+            "taskb"
+        ]
+        completer = QtWidgets.QCompleter(wordList)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.taskLine = QtWidgets.QLineEdit()
+        self.taskLine.setCompleter(completer)
+        self.taskLine.setPlaceholderText("Task")
+        self.taskLine.setFont(font)
+        self.verticalLayout.addWidget(self.taskLine)
+
+        # wordList = ["alpha", "omega", "omicron", "zeta"]
+        # completer = QtWidgets.QCompleter(wordList)
+        # completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        # self.taskLine = QtWidgets.QLineEdit()
+        # self.taskLine.setCompleter(completer)
+        # self.verticalLayout.addWidget(self.taskLine)
+
+        self.button1 = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.button1.setObjectName("pushButton")
+        self.button1.setText('开始')
+        self.button1.clicked.connect(self.onButtonClick)
+        self.button1.setFont(font)
+        self.verticalLayout.addWidget(self.button1)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -83,7 +122,7 @@ class Ui_MainWindow(object):
         moyuhour = moyumin//60
         playmin = self.history[self.date]['服务任务']//60
         playhour = playmin//60
-        self.label_0.setText("今天是%s\n\n技术任务:%dh %dmin %ds\n文献阅读:%dh %dmin %ds\n日常任务:%dh %dmin %ds\n服务任务:%dh %dmin %ds\n总计时:%dh %dmin %ds"
+        self.label_0.setText("今天是%s\n\n技术任务:\t%dh %dmin %ds\n文献阅读:\t%dh %dmin %ds\n日常任务:\t%dh %dmin %ds\n服务任务:\t%dh %dmin %ds\n总计时:\t\t%dh %dmin %ds\n"
                              % (
                                  self.date,
                                  workhour, workmin % 60, self.history[self.date]['技术任务'] % 60,
@@ -102,7 +141,7 @@ class Ui_MainWindow(object):
         else:
             self.button1.setText('开始')
             self.history[self.date]["总计时"] += time.time()-self.t1
-            self.history[self.date][self.comboBox.currentText()
+            self.history[self.date][self.classBox.currentText()
                                     ] += time.time()-self.t1
             self.label_1.setText('已停止计时，快来！')
             self.display()
