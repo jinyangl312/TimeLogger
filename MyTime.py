@@ -27,11 +27,11 @@ class Ui_MainWindow(object):
                                   localtime.tm_mon, localtime.tm_mday)  # 转换成日期
 
         # 读取记录
-        self.con = sqlite3.connect("data/time_logging.sqlite")
-        self.con.execute(
+        con = sqlite3.connect("data/time_logging.sqlite")
+        con.execute(
             "create table if not exists logging(date, start_time, end_time, duration, class, target, task)")
 
-        cur = self.con.cursor()
+        cur = con.cursor()
         self.todayLogging = {
             '总计时': 0, '技术任务': 0, '文献阅读': 0, '日常任务': 0, '服务任务': 0}
         for row in cur.execute(f"SELECT date, duration, class from logging\
@@ -45,6 +45,7 @@ class Ui_MainWindow(object):
         for row in cur.execute(f"SELECT task from logging"):
             task_dict.add(row[0])
         cur.close()
+        con.close()
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -168,7 +169,8 @@ class Ui_MainWindow(object):
                               ] += (self.end_time-self.start_time)//60
             self.display()
 
-            cur = self.con.cursor()
+            con = sqlite3.connect("data/time_logging.sqlite")
+            cur = con.cursor()
             cur.execute(
                 "insert into logging(date, start_time, end_time, duration, class, target, task) \
                 values (?,?,?,?,?,?,?)",
@@ -180,14 +182,11 @@ class Ui_MainWindow(object):
                     self.classBox.currentText(),
                     self.targetBox.currentText(),
                     self.taskLine.text()))
-            self.con.commit()
+            con.commit()
             cur.close()
-            self.con.close()
-            self.con = sqlite3.connect("data/time_logging.sqlite")
+            con.close()
 
     def closeEvent(self, event):
-        self.con.close()
-
         for widget in QtWidgets.QApplication.instance().allWidgets():
             if isinstance(widget, QtWidgets.QWidget) and widget != self:
                 widget.close()
