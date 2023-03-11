@@ -1,8 +1,6 @@
 from PyQt5 import QtCore, QtWidgets, QtGui, Qt
 from sys import argv, exit
-from os import path
 import time
-import json
 import sys
 import sqlite3
 
@@ -16,7 +14,7 @@ class Ui_MainWindow(object):
         self.w = AnotherWindow()
 
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setWindowTitle('MyTime')
+        MainWindow.setWindowTitle('TimeLogger')
         MainWindow.resize(600, 600)
 
         self.on = False  # 开关标志
@@ -33,7 +31,7 @@ class Ui_MainWindow(object):
 
         cur = con.cursor()
         self.todayLogging = {
-            '总计时': 0, '技术任务': 0, '文献阅读': 0, '日常任务': 0, '服务任务': 0}
+            '总计时': 0, '技术工作': 0, '文献阅读': 0, '日常工作': 0, '服务工作': 0}
         for row in cur.execute(f"SELECT date, duration, class from logging\
             where date = '{self.date}'"):
             self.todayLogging[row[2]] += row[1]
@@ -67,10 +65,10 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.label_1)
 
         class_items = [
-            "技术任务",
+            "技术工作",
             "文献阅读",
-            "日常任务",
-            "服务任务"
+            "日常工作",
+            "服务工作"
         ]
         self.classBox = QtWidgets.QComboBox()
         self.classBox.addItems(class_items)
@@ -118,21 +116,21 @@ class Ui_MainWindow(object):
     def display(self):
         totalmin = self.todayLogging["总计时"]
         totalhour = totalmin//60
-        workmin = self.todayLogging['技术任务']
+        workmin = self.todayLogging['技术工作']
         workhour = workmin//60
         studymin = self.todayLogging['文献阅读']
         studyhour = studymin//60
-        moyumin = self.todayLogging['日常任务']
+        moyumin = self.todayLogging['日常工作']
         moyuhour = moyumin//60
-        playmin = self.todayLogging['服务任务']
+        playmin = self.todayLogging['服务工作']
         playhour = playmin//60
         self.label_0.setText("""
 今天是%s\n\n\
-技术任务:\t%dh %dmin\t\t%.1f
-文献阅读:\t%dh %dmin\t\t%.1f
-日常任务:\t%dh %dmin\t\t%.1f
-服务任务:\t%dh %dmin\t\t%.1f
-总计时:\t\t%dh %dmin\t\t%.1f
+技术工作:\t%dh %2dmin\t%.1f
+文献阅读:\t%dh %2dmin\t%.1f
+日常工作:\t%dh %2dmin\t%.1f
+服务工作:\t%dh %2dmin\t%.1f
+总计时:\t\t%dh %2dmin\t%.1f
 """
                              % (
                                  self.date,
@@ -218,7 +216,7 @@ class AnotherWindow(QtWidgets.QWidget):
         duration = int(cur_time - self.start_time)
         # 设置系统时间的显示格式
         timeDisplay = '{:2d}:{:02d}:{:02d}'.format(
-            duration//3600, duration // 60, duration % 60)
+            duration//3600, duration // 60 % 60, duration % 60)
         # print(timeDisplay)
         # 状态栏显示
         timeLabel.setText(timeDisplay)
