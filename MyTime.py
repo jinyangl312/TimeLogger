@@ -17,8 +17,10 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle('TimeLogger')
         MainWindow.resize(600, 600)
 
-        self.on = False  # 开关标志
+        self.startButtonOn = False  # 开关标志
+        self.pauseButtonOn = False
         self.start_time = 0  # 前一次计时时间
+        self.pause_duration = 0
 
         localtime = time.localtime(time.time())  # 本地时间
         self.date = '%s-%s-%s' % (localtime.tm_year,
@@ -35,14 +37,14 @@ class Ui_MainWindow(object):
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setObjectName("verticalLayout")
 
-        self.label_0 = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label_0.setObjectName("label_0")
-        self.label_0.setFont(font)
-        self.verticalLayout.addWidget(self.label_0)
+        self.dailyPannel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.dailyPannel.setObjectName("dailyPannel")
+        self.dailyPannel.setFont(font)
+        self.verticalLayout.addWidget(self.dailyPannel)
 
-        self.label_1 = QtWidgets.QLabel(self.verticalLayoutWidget)
-        self.label_1.setObjectName("label")
-        self.verticalLayout.addWidget(self.label_1)
+        self.workHints = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.workHints.setObjectName("workHints")
+        self.verticalLayout.addWidget(self.workHints)
 
         class_items = [
             "技术工作",
@@ -74,12 +76,18 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.taskLine)
 
         self.button1 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.button1.setObjectName("pushButton")
-        self.button1.setText('开始')
+        self.button1.setObjectName("startEndButton")
+        self.button1.setText('开始工作')
         self.button1.clicked.connect(self.onStartButtonClick)
         self.button1.setFont(font)
         self.verticalLayout.addWidget(self.button1)
-        # self.button1.clicked.connect(self.show_new_window)
+
+        self.button2 = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.button2.setObjectName("pauseButton")
+        self.button2.setText('暂停工作')
+        self.button2.clicked.connect(self.onPauseButtonClick)
+        self.button2.setFont(font)
+        self.verticalLayout.addWidget(self.button2)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -94,31 +102,54 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def onStartButtonClick(self):
-        if not self.on:
+        if not self.startButtonOn:
             # Start the counting
             self.button1.setText('结束工作')
             self.w.show()
             self.w.startWork()
             self.start_time = time.time()
             self.start_time_l = time.localtime()
-            self.label_1.setText('正在计时')
-            self.on = True
+            self.workHints.setText('正在计时')
+            self.startButtonOn = True
         else:
             # Stop the counting and take records
+            if self.pauseButtonOn:
+                self.onPauseButtonClick()
+
             self.button1.setText('开始工作')
             self.w.show()
             # self.w.hide()
             self.w.startRest()
-            self.label_1.setText('')
+            self.workHints.setText('')
             self.end_time = time.time()
             self.end_time_l = time.localtime()
-            self.on = False
+            self.startButtonOn = False
 
-            self.todayLogging["总计时"] += (self.end_time-self.start_time)//60
+            self.todayLogging["总计时"] += (self.end_time -
+                                         self.start_time - self.pause_duration)//60
             self.todayLogging[self.classBox.currentText()
-                              ] += (self.end_time-self.start_time)//60
+                              ] += (self.end_time-self.start_time - self.pause_duration)//60
             self.writeTimeLogging("data/time_logging.sqlite")
             self.displayTodayLogging()
+
+            self.pause_duration = 0
+
+    def onPauseButtonClick(self):
+        if not self.pauseButtonOn:
+            # Start pause
+            self.button2.setText('恢复工作')
+            self.w.startPause()
+            self.start_pause = time.time()
+            self.workHints.setText('暂停计时')
+            self.pauseButtonOn = True
+        else:
+            # Stop pause and take records
+            self.button2.setText('暂停工作')
+            self.w.resumeWork()
+            self.workHints.setText('')
+            self.end_pause = time.time()
+            self.pause_duration += self.end_pause - self.start_pause
+            self.pauseButtonOn = False
 
     def displayTodayLogging(self):
         totalmin = self.todayLogging["总计时"]
@@ -131,7 +162,7 @@ class Ui_MainWindow(object):
         moyuhour = moyumin//60
         playmin = self.todayLogging['服务工作']
         playhour = playmin//60
-        self.label_0.setText("""
+        self.dailyPannel.setText("""
 今天是%s\n\n\
 技术工作:\t%dh %2dmin\t%.1f
 文献阅读:\t%dh %2dmin\t%.1f
@@ -139,14 +170,14 @@ class Ui_MainWindow(object):
 服务工作:\t%dh %2dmin\t%.1f
 总计时:\t\t%dh %2dmin\t%.1f
 """
-                             % (
-                                 self.date,
-                                 workhour, workmin % 60, workmin/25,
-                                 studyhour, studymin % 60, studymin/25,
-                                 moyuhour, moyumin % 60, moyumin/25,
-                                 playhour, playmin % 60, playmin/25,
-                                 totalhour, totalmin % 60, totalmin/25,
-                             ))
+                                 % (
+                                     self.date,
+                                     workhour, workmin % 60, workmin/25,
+                                     studyhour, studymin % 60, studymin/25,
+                                     moyuhour, moyumin % 60, moyumin/25,
+                                     playhour, playmin % 60, playmin/25,
+                                     totalhour, totalmin % 60, totalmin/25,
+                                 ))
 
     def initTodayLogging(self, db_path):
         connection = sqlite3.connect(db_path)
@@ -177,9 +208,9 @@ class Ui_MainWindow(object):
             values (?,?,?,?,?,?,?)",
             (
                 self.date,
-                '%d:%2d' % (self.start_time_l[3], self.start_time_l[4]),
-                '%d:%2d' % (self.end_time_l[3], self.end_time_l[4]),
-                (self.end_time-self.start_time)//60,
+                '%d:%02d' % (self.start_time_l[3], self.start_time_l[4]),
+                '%d:%02d' % (self.end_time_l[3], self.end_time_l[4]),
+                (self.end_time-self.start_time-self.pause_duration)//60,
                 self.classBox.currentText(),
                 self.targetBox.currentText(),
                 self.taskLine.text()))
@@ -211,7 +242,9 @@ class UI_TimeCounter(QtWidgets.QWidget):
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint |
                             QtCore.Qt.FramelessWindowHint)
         self.start_time = time.time()
+        self.pause_duration = 0
         self.onWork = False
+        self.onPause = False
         self.statusShowTime()
 
     def statusShowTime(self):
@@ -223,33 +256,65 @@ class UI_TimeCounter(QtWidgets.QWidget):
     # https://blog.csdn.net/HG0724/article/details/116308195
     def showCurrentTime(self, timeLabel):
         cur_time = time.time()
-        duration = int(cur_time - self.start_time)
+        if self.onWork or not self.onPause:
+            duration = int(cur_time - self.start_time - self.pause_duration)
+        else:
+            duration = int(cur_time - self.start_pause)
         # 设置系统时间的显示格式
         timeDisplay = '{:2d}:{:02d}:{:02d}'.format(
             duration//3600, duration // 60 % 60, duration % 60)
         # print(timeDisplay)
         timeLabel.setText(timeDisplay)
 
-        if self.onWork and duration % (25 * 60) == 0:
+        if self.onWork and int(cur_time - self.last_start_time + 1) % (25 * 60) == 0:
             self.showWork25min()
 
     def startWork(self):
         self.onWork = True
+        self.onPause = False
         self.start_time = time.time()
+        self.last_start_time = self.start_time
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
         self.timeDisplayLabel.setFont(font)
         self.timeDisplayLabel.setStyleSheet("color:red")
+        self.showCurrentTime(self.timeDisplayLabel)
 
     def startRest(self):
         self.onWork = False
+        self.onPause = False
         self.start_time = time.time()
+        self.pause_duration = 0
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
         self.timeDisplayLabel.setFont(font)
         self.timeDisplayLabel.setStyleSheet("color:green")
+        self.showCurrentTime(self.timeDisplayLabel)
+
+    def resumeWork(self):
+        self.onWork = True
+        self.onPause = False
+        self.pause_duration = time.time() - self.start_pause
+        self.last_start_time = time.time()
+        font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
+        font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
+        self.timeDisplayLabel.setFont(font)
+        self.timeDisplayLabel.setStyleSheet("color:red")
+        self.showCurrentTime(self.timeDisplayLabel)
+
+    def startPause(self):
+        self.onWork = False
+        self.onPause = True
+        self.start_pause = time.time()
+        font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
+        font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
+        self.timeDisplayLabel.setFont(font)
+        self.timeDisplayLabel.setStyleSheet("color:yellow")
+        self.showCurrentTime(self.timeDisplayLabel)
 
     # https://blog.csdn.net/FanMLei/article/details/79433229
     def mousePressEvent(self, event):
