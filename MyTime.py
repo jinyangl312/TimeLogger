@@ -11,7 +11,7 @@ class Ui_MainWindow(object):
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(16)  # 括号里的数字可以设置成自己想要的字体大小
 
-        self.w = AnotherWindow()
+        self.w = UI_TimeCounter()
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowTitle('TimeLogger')
@@ -24,27 +24,7 @@ class Ui_MainWindow(object):
         self.date = '%s-%s-%s' % (localtime.tm_year,
                                   localtime.tm_mon, localtime.tm_mday)  # 转换成日期
 
-        # 读取记录
-        con = sqlite3.connect("data/time_logging.sqlite")
-        con.execute(
-            "create table if not exists logging(date, start_time, end_time, duration, class, target, task)")
-
-        cur = con.cursor()
-        self.todayLogging = {
-            '总计时': 0, '技术工作': 0, '文献阅读': 0, '日常工作': 0, '服务工作': 0}
-        for row in cur.execute(f"SELECT date, duration, class from logging\
-            where date = '{self.date}'"):
-            self.todayLogging[row[2]] += row[1]
-        self.todayLogging['总计时'] = sum(self.todayLogging.values())
-        target_dict = set()
-        for row in cur.execute(f"SELECT target from logging"):
-            target_dict.add(row[0])
-        task_dict = set()
-        for row in cur.execute(f"SELECT task from logging"):
-            task_dict.add(row[0])
-        cur.close()
-        con.close()
-
+        self.initTodayLogging("data/time_logging.sqlite")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
@@ -78,14 +58,14 @@ class Ui_MainWindow(object):
 
         # https://blog.csdn.net/u012828517/article/details/105158680
         self.targetBox = QtWidgets.QComboBox()
-        self.targetBox.addItems(list(target_dict))
+        self.targetBox.addItems(list(self.target_dict))
         # self.targetBox.setCurrentIndex(0)
         self.targetBox.setEditable(True)
         self.targetBox.lineEdit().setPlaceholderText("Target")
         self.targetBox.setFont(font)
         self.verticalLayout.addWidget(self.targetBox)
 
-        completer = QtWidgets.QCompleter(list(task_dict))
+        completer = QtWidgets.QCompleter(list(self.task_dict))
         completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.taskLine = QtWidgets.QLineEdit()
         self.taskLine.setCompleter(completer)
@@ -96,7 +76,7 @@ class Ui_MainWindow(object):
         self.button1 = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.button1.setObjectName("pushButton")
         self.button1.setText('开始')
-        self.button1.clicked.connect(self.onButtonClick)
+        self.button1.clicked.connect(self.onStartButtonClick)
         self.button1.setFont(font)
         self.verticalLayout.addWidget(self.button1)
         # self.button1.clicked.connect(self.show_new_window)
@@ -110,10 +90,37 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
-        self.display()
+        self.displayTodayLogging()
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-    def display(self):
+    def onStartButtonClick(self):
+        if not self.on:
+            # Start the counting
+            self.button1.setText('结束工作')
+            self.w.show()
+            self.w.startWork()
+            self.start_time = time.time()
+            self.start_time_l = time.localtime()
+            self.label_1.setText('正在计时')
+            self.on = True
+        else:
+            # Stop the counting and take records
+            self.button1.setText('开始工作')
+            self.w.show()
+            # self.w.hide()
+            self.w.startRest()
+            self.label_1.setText('')
+            self.end_time = time.time()
+            self.end_time_l = time.localtime()
+            self.on = False
+
+            self.todayLogging["总计时"] += (self.end_time-self.start_time)//60
+            self.todayLogging[self.classBox.currentText()
+                              ] += (self.end_time-self.start_time)//60
+            self.writeTimeLogging("data/time_logging.sqlite")
+            self.displayTodayLogging()
+
+    def displayTodayLogging(self):
         totalmin = self.todayLogging["总计时"]
         totalhour = totalmin//60
         workmin = self.todayLogging['技术工作']
@@ -141,48 +148,44 @@ class Ui_MainWindow(object):
                                  totalhour, totalmin % 60, totalmin/25,
                              ))
 
-    def onButtonClick(self):
-        if not self.on:
-            # Start the counting
-            self.button1.setText('结束')
-            self.w.show()
-            self.w.begin_work()
-            self.start_time = time.time()
-            self.start_time_l = time.localtime()
-            self.label_1.setText('正在计时')
-            self.on = True
-        else:
-            # Stop the counting and take records
-            self.button1.setText('开始')
-            self.w.show()
-            # self.w.hide()
-            self.w.begin_rest()
-            self.label_1.setText('暂停计时')
-            self.end_time = time.time()
-            self.end_time_l = time.localtime()
-            self.on = False
+    def initTodayLogging(self, db_path):
+        connection = sqlite3.connect(db_path)
+        connection.execute(
+            "create table if not exists logging(date, start_time, end_time, duration, class, target, task)")
 
-            self.todayLogging["总计时"] += (self.end_time-self.start_time)//60
-            self.todayLogging[self.classBox.currentText()
-                              ] += (self.end_time-self.start_time)//60
-            self.display()
+        cursor = connection.cursor()
+        self.todayLogging = {
+            '总计时': 0, '技术工作': 0, '文献阅读': 0, '日常工作': 0, '服务工作': 0}
+        for row in cursor.execute(f"SELECT date, duration, class from logging\
+            where date = '{self.date}'"):
+            self.todayLogging[row[2]] += row[1]
+        self.todayLogging['总计时'] = sum(self.todayLogging.values())
+        self.target_dict = set()
+        for row in cursor.execute(f"SELECT target from logging"):
+            self.target_dict.add(row[0])
+        self.task_dict = set()
+        for row in cursor.execute(f"SELECT task from logging"):
+            self.task_dict.add(row[0])
+        cursor.close()
+        connection.close()
 
-            con = sqlite3.connect("data/time_logging.sqlite")
-            cur = con.cursor()
-            cur.execute(
-                "insert into logging(date, start_time, end_time, duration, class, target, task) \
-                values (?,?,?,?,?,?,?)",
-                (
-                    self.date,
-                    f'{self.start_time_l[3]}:{self.start_time_l[4]}',
-                    f'{self.end_time_l[3]}:{self.end_time_l[4]}',
-                    (self.end_time-self.start_time)//60,
-                    self.classBox.currentText(),
-                    self.targetBox.currentText(),
-                    self.taskLine.text()))
-            con.commit()
-            cur.close()
-            con.close()
+    def writeTimeLogging(self, db_path):
+        connection = sqlite3.connect(db_path)
+        cursor = connection.cursor()
+        cursor.execute(
+            "insert into logging(date, start_time, end_time, duration, class, target, task) \
+            values (?,?,?,?,?,?,?)",
+            (
+                self.date,
+                '%d:%2d' % (self.start_time_l[3], self.start_time_l[4]),
+                '%d:%2d' % (self.end_time_l[3], self.end_time_l[4]),
+                (self.end_time-self.start_time)//60,
+                self.classBox.currentText(),
+                self.targetBox.currentText(),
+                self.taskLine.text()))
+        connection.commit()
+        cursor.close()
+        connection.close()
 
     def closeEvent(self, event):
         for widget in QtWidgets.QApplication.instance().allWidgets():
@@ -192,7 +195,7 @@ class Ui_MainWindow(object):
         sys.exit(0)
 
 
-class AnotherWindow(QtWidgets.QWidget):
+class UI_TimeCounter(QtWidgets.QWidget):
     """
     This "window" is a QWidget. If it has no parent, it
     will appear as a free-floating window as we want.
@@ -202,13 +205,20 @@ class AnotherWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         layout = QtWidgets.QVBoxLayout()
-        self.label = QtWidgets.QLabel("Another Window")
-        layout.addWidget(self.label)
+        self.timeDisplayLabel = QtWidgets.QLabel()
+        layout.addWidget(self.timeDisplayLabel)
         self.setLayout(layout)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint |
                             QtCore.Qt.FramelessWindowHint)
         self.start_time = time.time()
+        self.onWork = False
         self.statusShowTime()
+
+    def statusShowTime(self):
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(lambda: self.showCurrentTime(
+            self.timeDisplayLabel))  # 这个通过调用槽函数来刷新时间
+        self.timer.start(1000)  # 每隔一秒刷新一次，这里设置为1000ms  即1s
 
     # https://blog.csdn.net/HG0724/article/details/116308195
     def showCurrentTime(self, timeLabel):
@@ -218,30 +228,28 @@ class AnotherWindow(QtWidgets.QWidget):
         timeDisplay = '{:2d}:{:02d}:{:02d}'.format(
             duration//3600, duration // 60 % 60, duration % 60)
         # print(timeDisplay)
-        # 状态栏显示
         timeLabel.setText(timeDisplay)
 
-    def statusShowTime(self):
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(lambda: self.showCurrentTime(
-            self.label))  # 这个通过调用槽函数来刷新时间
-        self.timer.start(1000)  # 每隔一秒刷新一次，这里设置为1000ms  即1s
+        if self.onWork and duration % (25 * 60) == 0:
+            self.showWork25min()
 
-    def begin_work(self):
+    def startWork(self):
+        self.onWork = True
         self.start_time = time.time()
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
-        self.label.setFont(font)
-        self.label.setStyleSheet("color:red")
+        self.timeDisplayLabel.setFont(font)
+        self.timeDisplayLabel.setStyleSheet("color:red")
 
-    def begin_rest(self):
+    def startRest(self):
+        self.onWork = False
         self.start_time = time.time()
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
-        self.label.setFont(font)
-        self.label.setStyleSheet("color:green")
+        self.timeDisplayLabel.setFont(font)
+        self.timeDisplayLabel.setStyleSheet("color:green")
 
     # https://blog.csdn.net/FanMLei/article/details/79433229
     def mousePressEvent(self, event):
@@ -259,6 +267,10 @@ class AnotherWindow(QtWidgets.QWidget):
     def mouseReleaseEvent(self, QMouseEvent):
         self.m_flag = False
         self.setCursor(Qt.QCursor(QtCore.Qt.ArrowCursor))
+
+    def showWork25min(self):
+        QtWidgets.QMessageBox.information(
+            self, "TimeLogger", "25 minutes reached!")
 
     def closeEvent(self, event):
         sys.exit(0)
