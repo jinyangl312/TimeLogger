@@ -1,8 +1,10 @@
 from PyQt5 import QtCore, QtWidgets, QtGui, Qt
 from sys import argv, exit
+import re
 import time
 import sys
 import sqlite3
+import pandas as pd
 
 
 class Ui_MainWindow(object):
@@ -31,7 +33,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 50, 500, 500))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 550))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -75,19 +77,38 @@ class Ui_MainWindow(object):
         self.taskLine.setFont(font)
         self.verticalLayout.addWidget(self.taskLine)
 
-        self.button1 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.button1.setObjectName("startEndButton")
-        self.button1.setText('开始工作')
-        self.button1.clicked.connect(self.onStartButtonClick)
-        self.button1.setFont(font)
-        self.verticalLayout.addWidget(self.button1)
+        self.buttonStart = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.buttonStart.setObjectName("startEndButton")
+        self.buttonStart.setText('开始工作')
+        self.buttonStart.clicked.connect(self.onStartButtonClick)
+        self.buttonStart.setFont(font)
 
-        self.button2 = QtWidgets.QPushButton(self.verticalLayoutWidget)
-        self.button2.setObjectName("pauseButton")
-        self.button2.setText('暂停工作')
-        self.button2.clicked.connect(self.onPauseButtonClick)
-        self.button2.setFont(font)
-        self.verticalLayout.addWidget(self.button2)
+        self.buttonPause = QtWidgets.QPushButton(self.verticalLayoutWidget)
+        self.buttonPause.setObjectName("pauseButton")
+        self.buttonPause.setText('暂停工作')
+        self.buttonPause.clicked.connect(self.onPauseButtonClick)
+        self.buttonPause.setFont(font)
+
+        self.buttonDailyJournal = QtWidgets.QPushButton(
+            self.verticalLayoutWidget)
+        self.buttonDailyJournal.setText('日计划')
+        self.buttonDailyJournal.clicked.connect(self.onStartDailyJournal)
+        self.buttonDailyJournal.setFont(font)
+
+        self.buttonWeeklyJournal = QtWidgets.QPushButton(
+            self.verticalLayoutWidget)
+        self.buttonWeeklyJournal.setText('周计划')
+        self.buttonWeeklyJournal.clicked.connect(self.onStartWeeklyJournal)
+        self.buttonWeeklyJournal.setFont(font)
+
+        horizontalLayout1 = QtWidgets.QHBoxLayout()
+        horizontalLayout1.addWidget(self.buttonStart)
+        horizontalLayout1.addWidget(self.buttonPause)
+        self.verticalLayout.addLayout(horizontalLayout1)
+        horizontalLayout2 = QtWidgets.QHBoxLayout()
+        horizontalLayout2.addWidget(self.buttonDailyJournal)
+        horizontalLayout2.addWidget(self.buttonWeeklyJournal)
+        self.verticalLayout.addLayout(horizontalLayout2)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -104,7 +125,7 @@ class Ui_MainWindow(object):
     def onStartButtonClick(self):
         if not self.startButtonOn:
             # Start the counting
-            self.button1.setText('结束工作')
+            self.buttonStart.setText('结束工作')
             self.w.show()
             self.w.startWork()
             self.start_time = time.time()
@@ -116,7 +137,7 @@ class Ui_MainWindow(object):
             if self.pauseButtonOn:
                 self.onPauseButtonClick()
 
-            self.button1.setText('开始工作')
+            self.buttonStart.setText('开始工作')
             self.w.show()
             # self.w.hide()
             self.w.startRest()
@@ -137,19 +158,29 @@ class Ui_MainWindow(object):
     def onPauseButtonClick(self):
         if not self.pauseButtonOn:
             # Start pause
-            self.button2.setText('恢复工作')
+            self.buttonPause.setText('恢复工作')
             self.w.startPause()
             self.start_pause = time.time()
             self.workHints.setText('暂停计时')
             self.pauseButtonOn = True
         else:
             # Stop pause and take records
-            self.button2.setText('暂停工作')
+            self.buttonPause.setText('暂停工作')
             self.w.resumeWork()
             self.workHints.setText('')
             self.end_pause = time.time()
             self.pause_duration += self.end_pause - self.start_pause
             self.pauseButtonOn = False
+
+    def onStartDailyJournal(self):
+        self.childDailyJournal = DailyJournal()
+        self.childDailyJournal.show()
+        self.childDailyJournal.exec_()
+
+    def onStartWeeklyJournal(self):
+        self.childWeeklyJournal = WeeklyJournal()
+        self.childWeeklyJournal.show()
+        self.childWeeklyJournal.exec_()
 
     def displayTodayLogging(self):
         totalmin = self.todayLogging["总计时"]
@@ -339,6 +370,114 @@ class UI_TimeCounter(QtWidgets.QWidget):
 
     def closeEvent(self, event):
         sys.exit(0)
+
+# https://blog.csdn.net/li_l_il/article/details/103117414
+
+
+class DailyJournal(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
+        self.setWindowTitle('DailyJournal')
+        self.resize(1200, 800)
+
+        font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
+        font.setPointSize(16)  # 括号里的数字可以设置成自己想要的字体大小
+
+        layout = QtWidgets.QVBoxLayout()
+        horizontalLayout = QtWidgets.QHBoxLayout()
+        self.hintPannel = QtWidgets.QLabel()
+        self.hintPannel.setFont(font)
+        self.hintPannel.setText("时间：")
+        horizontalLayout.addWidget(self.hintPannel)
+
+        self.timeLine = QtWidgets.QLineEdit()
+        self.timeLine.setPlaceholderText("202X-XX-XX")
+        self.timeLine.setFont(font)
+        horizontalLayout.addWidget(self.timeLine)
+
+        self.buttonStart = QtWidgets.QPushButton()
+        self.buttonStart.setText('开始')
+        self.buttonStart.clicked.connect(self.onStartButtonClick)
+        self.buttonStart.setFont(font)
+        horizontalLayout.addWidget(self.buttonStart)
+        layout.addLayout(horizontalLayout)
+
+        self.verticalLayoutWidget = QtWidgets.QWidget()
+        self.rollWindow = QtWidgets.QScrollArea()
+        self.journalPannel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.journalPannel.setFont(font)
+        self.rollWindow.setWidget(self.journalPannel)
+        layout.addWidget(self.rollWindow)
+
+        self.setLayout(layout)
+
+    def onStartButtonClick(self):
+        def target_details(df):
+            res = ""
+            if len(df) == 0:
+                return res
+            res += f"\n{df['target'].iloc[0]}\tsum: \t{df['duration'].sum()}\tclock: {'%.1f' % (df['duration'].sum()/25)}\n"
+            for _, line in df[['start_time', 'end_time', 'duration', 'target', 'task']].iterrows():
+                res += f"{line['start_time']}\t{line['end_time']}\t{line['duration']}\t{line['target']}\t{line['task']}\n"
+            return res
+
+        res = ""
+        date = self.timeLine.text()
+        date = re.search("(\d{4}\-\d{1,2}\-\d{1,2})", date).group()
+        date = re.sub("((?<=\d{4}\-)0*)", "", date)
+        date = re.sub("((?<=\-)0*(?=\d+$))", "", date)
+
+        con = sqlite3.connect("data/time_logging.sqlite")
+        cur = con.cursor()
+
+        lines = [x for x in cur.execute(f"SELECT * from logging\
+            where date = '{date}'")]
+        cur.close()
+        con.close()
+
+        df = pd.DataFrame(lines, columns=[
+                          'date', 'start_time', 'end_time', 'duration', 'class', 'target', 'task'])
+
+        for class_label in ('技术工作', '文献阅读', '日常工作', '服务工作'):
+            res += f"{class_label}\t\t{'%.1f' %(df[df['class'] == class_label]['duration'].sum()/25)}\n"
+        res += f"总时间\t\t{df['duration'].sum()}\t\t{'%.1f' % (df['duration'].sum()/25)}\n\n"
+
+        if len(df[df['class'] == '技术工作']) > 0:
+            for x in df[df['class'] ==
+                        '技术工作'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '文献阅读']) > 0:
+            for x in df[df['class'] ==
+                        '文献阅读'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '日常工作']) > 0:
+            for x in df[df['class'] ==
+                        '日常工作'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '服务工作']) > 0:
+            for x in df[df['class'] ==
+                        '服务工作'].groupby('target').apply(target_details):
+                res += x
+
+        self.journalPannel.setText(res)
+        self.journalPannel.adjustSize()
+        return
+
+
+class WeeklyJournal(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
+        self.setWindowTitle('WeeklyJournal')
+        self.resize(1200, 800)
 
 
 if __name__ == "__main__":
