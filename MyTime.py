@@ -151,6 +151,12 @@ class Ui_MainWindow(object):
             self.todayLogging[self.classBox.currentText()
                               ] += (self.end_time-self.start_time - self.pause_duration)//60
             self.writeTimeLogging("data/time_logging.sqlite")
+
+            localtime = time.localtime(time.time())  # 本地时间
+            if self.date != '%s-%s-%s' % (localtime.tm_year,
+                                          localtime.tm_mon, localtime.tm_mday):
+                self.initTodayLogging("data/time_logging.sqlite")
+
             self.displayTodayLogging()
 
             self.pause_duration = 0
@@ -382,7 +388,7 @@ class DailyJournal(QtWidgets.QDialog):
     def initUI(self):
         self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
         self.setWindowTitle('DailyJournal')
-        self.resize(1200, 800)
+        self.resize(900, 900)
 
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
