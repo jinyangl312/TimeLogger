@@ -403,8 +403,12 @@ class DailyJournal(QtWidgets.QDialog):
         self.hintPannel.setText("时间：")
         horizontalLayout.addWidget(self.hintPannel)
 
+        localtime = time.localtime(time.time())  # 本地时间
+        date = '%s-%s-%s' % (localtime.tm_year,
+                             localtime.tm_mon, localtime.tm_mday)  # 转换成日期
+
         self.timeLine = QtWidgets.QLineEdit()
-        self.timeLine.setPlaceholderText("202X-XX-XX")
+        self.timeLine.setText(date)
         self.timeLine.setFont(font)
         horizontalLayout.addWidget(self.timeLine)
 
@@ -491,6 +495,10 @@ class WeeklyJournal(QtWidgets.QDialog):
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(16)  # 括号里的数字可以设置成自己想要的字体大小
 
+        localtime = time.localtime(time.time())  # 本地时间
+        date = '%s-%s-%s' % (localtime.tm_year,
+                             localtime.tm_mon, localtime.tm_mday)  # 转换成日期
+
         layout = QtWidgets.QVBoxLayout()
         horizontalLayout = QtWidgets.QHBoxLayout()
         self.hintPannel1 = QtWidgets.QLabel()
@@ -499,7 +507,7 @@ class WeeklyJournal(QtWidgets.QDialog):
         horizontalLayout.addWidget(self.hintPannel1)
 
         self.timeLine1 = QtWidgets.QLineEdit()
-        self.timeLine1.setPlaceholderText("202X-XX-XX")
+        self.timeLine1.setText(date)
         self.timeLine1.setFont(font)
         horizontalLayout.addWidget(self.timeLine1)
 
@@ -509,7 +517,7 @@ class WeeklyJournal(QtWidgets.QDialog):
         horizontalLayout.addWidget(self.hintPannel2)
 
         self.timeLine2 = QtWidgets.QLineEdit()
-        self.timeLine2.setPlaceholderText("202X-XX-XX")
+        self.timeLine2.setText(date)
         self.timeLine2.setFont(font)
         horizontalLayout.addWidget(self.timeLine2)
 
