@@ -124,6 +124,13 @@ class Ui_MainWindow(object):
 
     def onStartButtonClick(self):
         if not self.startButtonOn:
+            localtime = time.localtime(time.time())  # 本地时间
+            if self.date != '%s-%s-%s' % (localtime.tm_year,
+                                          localtime.tm_mon, localtime.tm_mday):
+                self.date = '%s-%s-%s' % (localtime.tm_year,
+                                          localtime.tm_mon, localtime.tm_mday)  # 转换成日期
+                self.initTodayLogging("data/time_logging.sqlite")
+
             # Start the counting
             self.buttonStart.setText('结束工作')
             self.w.show()
@@ -151,11 +158,6 @@ class Ui_MainWindow(object):
             self.todayLogging[self.classBox.currentText()
                               ] += (self.end_time-self.start_time - self.pause_duration)//60
             self.writeTimeLogging("data/time_logging.sqlite")
-
-            localtime = time.localtime(time.time())  # 本地时间
-            if self.date != '%s-%s-%s' % (localtime.tm_year,
-                                          localtime.tm_mon, localtime.tm_mday):
-                self.initTodayLogging("data/time_logging.sqlite")
 
             self.displayTodayLogging()
 
@@ -483,7 +485,102 @@ class WeeklyJournal(QtWidgets.QDialog):
     def initUI(self):
         self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint)
         self.setWindowTitle('WeeklyJournal')
-        self.resize(1200, 800)
+        self.resize(900, 900)
+
+        font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
+        font.setPointSize(16)  # 括号里的数字可以设置成自己想要的字体大小
+
+        layout = QtWidgets.QVBoxLayout()
+        horizontalLayout = QtWidgets.QHBoxLayout()
+        self.hintPannel1 = QtWidgets.QLabel()
+        self.hintPannel1.setFont(font)
+        self.hintPannel1.setText("起始：")
+        horizontalLayout.addWidget(self.hintPannel1)
+
+        self.timeLine1 = QtWidgets.QLineEdit()
+        self.timeLine1.setPlaceholderText("202X-XX-XX")
+        self.timeLine1.setFont(font)
+        horizontalLayout.addWidget(self.timeLine1)
+
+        horizontalLayout = QtWidgets.QHBoxLayout()
+        self.hintPannel2 = QtWidgets.QLabel()
+        self.hintPannel2.setFont(font)
+        self.hintPannel2.setText("终止：")
+        horizontalLayout.addWidget(self.hintPannel2)
+
+        self.timeLine2 = QtWidgets.QLineEdit()
+        self.timeLine2.setPlaceholderText("202X-XX-XX")
+        self.timeLine2.setFont(font)
+        horizontalLayout.addWidget(self.timeLine2)
+
+        self.buttonStart = QtWidgets.QPushButton()
+        self.buttonStart.setText('开始')
+        self.buttonStart.clicked.connect(self.onStartButtonClick)
+        self.buttonStart.setFont(font)
+        horizontalLayout.addWidget(self.buttonStart)
+        layout.addLayout(horizontalLayout)
+
+        self.verticalLayoutWidget = QtWidgets.QWidget()
+        self.rollWindow = QtWidgets.QScrollArea()
+        self.journalPannel = QtWidgets.QLabel(self.verticalLayoutWidget)
+        self.journalPannel.setFont(font)
+        self.rollWindow.setWidget(self.journalPannel)
+        layout.addWidget(self.rollWindow)
+
+        self.setLayout(layout)
+
+    def onStartButtonClick(self):
+        def target_details(df):
+            res = ""
+            if len(df) == 0:
+                return res
+            res += f"\n{df['target'].iloc[0]}\tsum: \t{df['duration'].sum()}\tclock: {'%.1f' % (df['duration'].sum()/25)}\n"
+            for _, line in df[['start_time', 'end_time', 'duration', 'target', 'task']].iterrows():
+                res += f"{line['start_time']}\t{line['end_time']}\t{line['duration']}\t{line['target']}\t{line['task']}\n"
+            return res
+
+        res = ""
+        date = self.timeLine1.text()
+        date = re.search("(\d{4}\-\d{1,2}\-\d{1,2})", date).group()
+        date = re.sub("((?<=\d{4}\-)0*)", "", date)
+        date = re.sub("((?<=\-)0*(?=\d+$))", "", date)
+
+        con = sqlite3.connect("data/time_logging.sqlite")
+        cur = con.cursor()
+
+        lines = [x for x in cur.execute(f"SELECT * from logging\
+            where date = '{date}'")]
+        cur.close()
+        con.close()
+
+        df = pd.DataFrame(lines, columns=[
+                          'date', 'start_time', 'end_time', 'duration', 'class', 'target', 'task'])
+
+        for class_label in ('技术工作', '文献阅读', '日常工作', '服务工作'):
+            res += f"{class_label}\t\t{'%.1f' %(df[df['class'] == class_label]['duration'].sum()/25)}\n"
+        res += f"总时间\t\t{df['duration'].sum()}\t\t{'%.1f' % (df['duration'].sum()/25)}\n\n"
+
+        if len(df[df['class'] == '技术工作']) > 0:
+            for x in df[df['class'] ==
+                        '技术工作'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '文献阅读']) > 0:
+            for x in df[df['class'] ==
+                        '文献阅读'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '日常工作']) > 0:
+            for x in df[df['class'] ==
+                        '日常工作'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '服务工作']) > 0:
+            for x in df[df['class'] ==
+                        '服务工作'].groupby('target').apply(target_details):
+                res += x
+
+        self.journalPannel.setText(res)
+        self.journalPannel.adjustSize()
+        return
 
 
 if __name__ == "__main__":
