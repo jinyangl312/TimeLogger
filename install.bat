@@ -1,2 +1,2 @@
-pyinstaller -F -w MyTime.py
+pyinstaller -F -w TimeLogger.py
 pause
