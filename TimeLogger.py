@@ -130,6 +130,7 @@ class Ui_MainWindow(object):
                 self.date = '%s-%s-%s' % (localtime.tm_year,
                                           localtime.tm_mon, localtime.tm_mday)  # 转换成日期
                 self.initTodayLogging("data/time_logging.sqlite")
+                self.displayTodayLogging()
 
             # Start the counting
             self.buttonStart.setText('结束工作')
@@ -256,6 +257,11 @@ class Ui_MainWindow(object):
         connection.commit()
         cursor.close()
         connection.close()
+
+
+class My_QMainWindow(QtWidgets.QMainWindow):
+    def __init__(self):
+        super().__init__()
 
     def closeEvent(self, event):
         for widget in QtWidgets.QApplication.instance().allWidgets():
@@ -594,7 +600,7 @@ class WeeklyJournal(QtWidgets.QDialog):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(argv)
-    MainWindow = QtWidgets.QMainWindow()
+    MainWindow = My_QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
