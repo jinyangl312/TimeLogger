@@ -503,7 +503,6 @@ class WeeklyJournal(QtWidgets.QDialog):
         self.timeLine1.setFont(font)
         horizontalLayout.addWidget(self.timeLine1)
 
-        horizontalLayout = QtWidgets.QHBoxLayout()
         self.hintPannel2 = QtWidgets.QLabel()
         self.hintPannel2.setFont(font)
         self.hintPannel2.setText("终止：")
@@ -536,21 +535,23 @@ class WeeklyJournal(QtWidgets.QDialog):
             if len(df) == 0:
                 return res
             res += f"\n{df['target'].iloc[0]}\tsum: \t{df['duration'].sum()}\tclock: {'%.1f' % (df['duration'].sum()/25)}\n"
-            for _, line in df[['start_time', 'end_time', 'duration', 'target', 'task']].iterrows():
-                res += f"{line['start_time']}\t{line['end_time']}\t{line['duration']}\t{line['target']}\t{line['task']}\n"
+            for _, line in df[['date', 'start_time', 'end_time', 'duration', 'target', 'task']].iterrows():
+                res += f"{line['date']}\t{line['start_time']}\t{line['end_time']}\t{line['duration']}\t{line['target']}\t{line['task']}\n"
             return res
 
         res = ""
-        date = self.timeLine1.text()
-        date = re.search("(\d{4}\-\d{1,2}\-\d{1,2})", date).group()
-        date = re.sub("((?<=\d{4}\-)0*)", "", date)
-        date = re.sub("((?<=\-)0*(?=\d+$))", "", date)
+        start_date = self.timeLine1.text()
+        end_date = self.timeLine2.text()
+        date_range = pd.date_range(start_date, end_date)
 
         con = sqlite3.connect("data/time_logging.sqlite")
         cur = con.cursor()
 
-        lines = [x for x in cur.execute(f"SELECT * from logging\
-            where date = '{date}'")]
+        lines = []
+        for date in date_range:
+            lines.extend([x for x in cur.execute(f"SELECT * from logging\
+                where date = '{date.year}-{date.month}-{date.day}'")])
+
         cur.close()
         con.close()
 
