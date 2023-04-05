@@ -69,13 +69,21 @@ class Ui_MainWindow(object):
         self.targetBox.setFont(font)
         self.verticalLayout.addWidget(self.targetBox)
 
-        completer = QtWidgets.QCompleter(list(self.task_dict))
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        self.taskLine = QtWidgets.QLineEdit()
-        self.taskLine.setCompleter(completer)
-        self.taskLine.setPlaceholderText("Task")
-        self.taskLine.setFont(font)
-        self.verticalLayout.addWidget(self.taskLine)
+        self.taskBox = QtWidgets.QComboBox()
+        self.taskBox.addItems(list(self.task_dict))
+        # self.taskBox.setCurrentIndex(0)
+        self.taskBox.setEditable(True)
+        self.taskBox.lineEdit().setPlaceholderText("Task")
+        self.taskBox.setFont(font)
+        self.verticalLayout.addWidget(self.taskBox)
+
+        # completer = QtWidgets.QCompleter(list(self.task_dict))
+        # completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        # self.taskLine = QtWidgets.QLineEdit()
+        # self.taskLine.setCompleter(completer)
+        # self.taskLine.setPlaceholderText("Task")
+        # self.taskLine.setFont(font)
+        # self.verticalLayout.addWidget(self.taskLine)
 
         self.buttonStart = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.buttonStart.setObjectName("startEndButton")
@@ -231,12 +239,21 @@ class Ui_MainWindow(object):
             where date = '{self.date}'"):
             self.todayLogging[row[2]] += row[1]
         self.todayLogging['总计时'] = sum(self.todayLogging.values())
+
+        localtime = time.localtime(time.time())  # 本地时间
+        cur_date = '%s-%s-%s' % (localtime.tm_year,
+                                 localtime.tm_mon, localtime.tm_mday)  # 转换成日期
+
+        # Select history target and task from the past 10 days into memory
         self.target_dict = set()
-        for row in cursor.execute(f"SELECT target from logging"):
-            self.target_dict.add(row[0])
         self.task_dict = set()
-        for row in cursor.execute(f"SELECT task from logging"):
-            self.task_dict.add(row[0])
+        for tmp_date in pd.date_range(end=cur_date, periods=10):
+            for row in cursor.execute(f"SELECT target from logging\
+                where date = '{tmp_date.year}-{tmp_date.month}-{tmp_date.day}'"):
+                self.target_dict.add(row[0])
+            for row in cursor.execute(f"SELECT task from logging\
+                where date = '{tmp_date.year}-{tmp_date.month}-{tmp_date.day}'"):
+                self.task_dict.add(row[0])
         cursor.close()
         connection.close()
 
@@ -253,7 +270,7 @@ class Ui_MainWindow(object):
                 (self.end_time-self.start_time-self.pause_duration)//60,
                 self.classBox.currentText(),
                 self.targetBox.currentText(),
-                self.taskLine.text()))
+                self.taskBox.currentText()))
         connection.commit()
         cursor.close()
         connection.close()
