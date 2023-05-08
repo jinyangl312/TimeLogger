@@ -5,6 +5,7 @@ import time
 import sys
 import sqlite3
 import pandas as pd
+import os
 
 
 class Ui_MainWindow(object):
@@ -28,6 +29,8 @@ class Ui_MainWindow(object):
         self.date = '%s-%s-%s' % (localtime.tm_year,
                                   localtime.tm_mon, localtime.tm_mday)  # 转换成日期
 
+        if not os.path.exists('data'):
+            os.mkdir('data')
         self.initTodayLogging("data/time_logging.sqlite")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
