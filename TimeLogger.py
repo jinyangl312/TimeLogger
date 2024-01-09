@@ -312,6 +312,7 @@ class UI_TimeCounter(QtWidgets.QWidget):
         self.setLayout(layout)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint |
                             QtCore.Qt.FramelessWindowHint)
+        self.last_start_time = time.time()
         self.start_time = time.time()
         self.pause_duration = 0
         self.onWork = False
