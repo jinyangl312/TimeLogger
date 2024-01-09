@@ -339,6 +339,8 @@ class UI_TimeCounter(QtWidgets.QWidget):
 
         if self.onWork and int(cur_time - self.last_start_time + 1) % (25 * 60) == 0:
             self.showWork25min()
+        elif int(cur_time - self.last_start_time + 1) % (10 * 60) == 0:
+            self.showRest10min()
 
     def startWork(self):
         self.onWork = True
@@ -407,6 +409,10 @@ class UI_TimeCounter(QtWidgets.QWidget):
     def showWork25min(self):
         QtWidgets.QMessageBox.information(
             self, "TimeLogger", "25 minutes reached!")
+        
+    def showRest10min(self):
+        QtWidgets.QMessageBox.information(
+            self, "TimeLogger", "10 minutes reached!")
 
     def closeEvent(self, event):
         sys.exit(0)
