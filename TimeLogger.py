@@ -103,13 +103,13 @@ class Ui_MainWindow(object):
 
         self.buttonDailyJournal = QtWidgets.QPushButton(
             self.verticalLayoutWidget)
-        self.buttonDailyJournal.setText('日计划')
+        self.buttonDailyJournal.setText('日统计')
         self.buttonDailyJournal.clicked.connect(self.onStartDailyJournal)
         self.buttonDailyJournal.setFont(font)
 
         self.buttonWeeklyJournal = QtWidgets.QPushButton(
             self.verticalLayoutWidget)
-        self.buttonWeeklyJournal.setText('周计划')
+        self.buttonWeeklyJournal.setText('阶段统计')
         self.buttonWeeklyJournal.clicked.connect(self.onStartWeeklyJournal)
         self.buttonWeeklyJournal.setFont(font)
 
@@ -141,8 +141,8 @@ class Ui_MainWindow(object):
                                           localtime.tm_mon, localtime.tm_mday):
                 self.date = '%s-%s-%s' % (localtime.tm_year,
                                           localtime.tm_mon, localtime.tm_mday)  # 转换成日期
-                self.initTodayLogging("data/time_logging.sqlite")
-                self.displayTodayLogging()
+            self.initTodayLogging("data/time_logging.sqlite")
+            self.displayTodayLogging()
 
             # Start the counting
             self.buttonStart.setText('结束工作')
