@@ -18,7 +18,7 @@ class Ui_MainWindow(object):
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowTitle('TimeLogger')
-        MainWindow.resize(600, 600)
+        MainWindow.resize(600, 650)
 
         self.startButtonOn = False  # 开关标志
         self.pauseButtonOn = False
@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 550))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 600))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
