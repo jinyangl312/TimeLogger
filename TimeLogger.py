@@ -18,7 +18,7 @@ class Ui_MainWindow(object):
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowTitle('TimeLogger')
-        MainWindow.resize(600, 600)
+        MainWindow.resize(600, 650)
 
         self.startButtonOn = False  # 开关标志
         self.pauseButtonOn = False
@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 550))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 600))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -52,10 +52,11 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.workHints)
 
         class_items = [
-            "技术工作",
+            "主线工作",
+            "支线工作",
             "文献阅读",
-            "日常工作",
-            "服务工作"
+            "日常安排",
+            "服务打杂"
         ]
         self.classBox = QtWidgets.QComboBox()
         self.classBox.addItems(class_items)
@@ -102,13 +103,13 @@ class Ui_MainWindow(object):
 
         self.buttonDailyJournal = QtWidgets.QPushButton(
             self.verticalLayoutWidget)
-        self.buttonDailyJournal.setText('日计划')
+        self.buttonDailyJournal.setText('日统计')
         self.buttonDailyJournal.clicked.connect(self.onStartDailyJournal)
         self.buttonDailyJournal.setFont(font)
 
         self.buttonWeeklyJournal = QtWidgets.QPushButton(
             self.verticalLayoutWidget)
-        self.buttonWeeklyJournal.setText('周计划')
+        self.buttonWeeklyJournal.setText('阶段统计')
         self.buttonWeeklyJournal.clicked.connect(self.onStartWeeklyJournal)
         self.buttonWeeklyJournal.setFont(font)
 
@@ -140,8 +141,8 @@ class Ui_MainWindow(object):
                                           localtime.tm_mon, localtime.tm_mday):
                 self.date = '%s-%s-%s' % (localtime.tm_year,
                                           localtime.tm_mon, localtime.tm_mday)  # 转换成日期
-                self.initTodayLogging("data/time_logging.sqlite")
-                self.displayTodayLogging()
+            self.initTodayLogging("data/time_logging.sqlite")
+            self.displayTodayLogging()
 
             # Start the counting
             self.buttonStart.setText('结束工作')
@@ -205,28 +206,33 @@ class Ui_MainWindow(object):
     def displayTodayLogging(self):
         totalmin = self.todayLogging["总计时"]
         totalhour = totalmin//60
-        workmin = self.todayLogging['技术工作']
-        workhour = workmin//60
-        studymin = self.todayLogging['文献阅读']
-        studyhour = studymin//60
-        moyumin = self.todayLogging['日常工作']
-        moyuhour = moyumin//60
-        playmin = self.todayLogging['服务工作']
-        playhour = playmin//60
+        workmin_1 = self.todayLogging['主线工作']
+        workhour_1 = workmin_1//60
+        workmin_2 = self.todayLogging['支线工作']
+        workhour_2 = workmin_2//60
+        workmin_3 = self.todayLogging['文献阅读']
+        workhour_3 = workmin_3//60
+        workmin_4 = self.todayLogging['日常安排']
+        workhour_4 = workmin_4//60
+        workmin_5 = self.todayLogging['服务打杂']
+        workhour_5 = workmin_5//60
+
         self.dailyPannel.setText("""
 今天是%s\n\n\
-技术工作:\t%dh %2dmin\t%.1f
+主线工作:\t%dh %2dmin\t%.1f
+支线工作:\t%dh %2dmin\t%.1f
 文献阅读:\t%dh %2dmin\t%.1f
-日常工作:\t%dh %2dmin\t%.1f
-服务工作:\t%dh %2dmin\t%.1f
+日常安排:\t%dh %2dmin\t%.1f
+服务打杂:\t%dh %2dmin\t%.1f
 总计时:\t\t%dh %2dmin\t%.1f
 """
                                  % (
                                      self.date,
-                                     workhour, workmin % 60, workmin/25,
-                                     studyhour, studymin % 60, studymin/25,
-                                     moyuhour, moyumin % 60, moyumin/25,
-                                     playhour, playmin % 60, playmin/25,
+                                     workhour_1, workmin_1 % 60, workmin_1/25,
+                                     workhour_2, workmin_2 % 60, workmin_2/25,
+                                     workhour_3, workmin_3 % 60, workmin_3/25,
+                                     workhour_4, workmin_4 % 60, workmin_4/25,
+                                     workhour_5, workmin_5 % 60, workmin_5/25,
                                      totalhour, totalmin % 60, totalmin/25,
                                  ))
 
@@ -237,7 +243,7 @@ class Ui_MainWindow(object):
 
         cursor = connection.cursor()
         self.todayLogging = {
-            '总计时': 0, '技术工作': 0, '文献阅读': 0, '日常工作': 0, '服务工作': 0}
+            '总计时': 0, '主线工作': 0, '支线工作': 0, '文献阅读': 0, '日常安排': 0, '服务打杂': 0}
         for row in cursor.execute(f"SELECT date, duration, class from logging\
             where date = '{self.date}'"):
             self.todayLogging[row[2]] += row[1]
@@ -306,6 +312,7 @@ class UI_TimeCounter(QtWidgets.QWidget):
         self.setLayout(layout)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint |
                             QtCore.Qt.FramelessWindowHint)
+        self.last_start_time = time.time()
         self.start_time = time.time()
         self.pause_duration = 0
         self.onWork = False
@@ -333,6 +340,8 @@ class UI_TimeCounter(QtWidgets.QWidget):
 
         if self.onWork and int(cur_time - self.last_start_time + 1) % (25 * 60) == 0:
             self.showWork25min()
+        elif int(cur_time - self.last_start_time + 1) % (10 * 60) == 0:
+            self.showRest10min()
 
     def startWork(self):
         self.onWork = True
@@ -401,6 +410,10 @@ class UI_TimeCounter(QtWidgets.QWidget):
     def showWork25min(self):
         QtWidgets.QMessageBox.information(
             self, "TimeLogger", "25 minutes reached!")
+        
+    def showRest10min(self):
+        QtWidgets.QMessageBox.information(
+            self, "TimeLogger", "10 minutes reached!")
 
     def closeEvent(self, event):
         sys.exit(0)
@@ -481,25 +494,29 @@ class DailyJournal(QtWidgets.QDialog):
         df = pd.DataFrame(lines, columns=[
                           'date', 'start_time', 'end_time', 'duration', 'class', 'target', 'task'])
 
-        for class_label in ('技术工作', '文献阅读', '日常工作', '服务工作'):
+        for class_label in ('主线工作', '支线工作', '文献阅读', '日常安排', '服务打杂'):
             res += f"{class_label}\t\t{'%.1f' %(df[df['class'] == class_label]['duration'].sum()/25)}\n"
         res += f"总时间\t\t{df['duration'].sum()}\t\t{'%.1f' % (df['duration'].sum()/25)}\n\n"
 
-        if len(df[df['class'] == '技术工作']) > 0:
+        if len(df[df['class'] == '主线工作']) > 0:
             for x in df[df['class'] ==
-                        '技术工作'].groupby('target').apply(target_details):
+                        '主线工作'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '支线工作']) > 0:
+            for x in df[df['class'] ==
+                        '支线工作'].groupby('target').apply(target_details):
                 res += x
         if len(df[df['class'] == '文献阅读']) > 0:
             for x in df[df['class'] ==
                         '文献阅读'].groupby('target').apply(target_details):
                 res += x
-        if len(df[df['class'] == '日常工作']) > 0:
+        if len(df[df['class'] == '日常安排']) > 0:
             for x in df[df['class'] ==
-                        '日常工作'].groupby('target').apply(target_details):
+                        '日常安排'].groupby('target').apply(target_details):
                 res += x
-        if len(df[df['class'] == '服务工作']) > 0:
+        if len(df[df['class'] == '服务打杂']) > 0:
             for x in df[df['class'] ==
-                        '服务工作'].groupby('target').apply(target_details):
+                        '服务打杂'].groupby('target').apply(target_details):
                 res += x
 
         self.journalPannel.setText(res)
@@ -592,25 +609,29 @@ class WeeklyJournal(QtWidgets.QDialog):
         df = pd.DataFrame(lines, columns=[
                           'date', 'start_time', 'end_time', 'duration', 'class', 'target', 'task'])
 
-        for class_label in ('技术工作', '文献阅读', '日常工作', '服务工作'):
+        for class_label in ('主线工作', '支线工作', '文献阅读', '日常安排', '服务打杂'):
             res += f"{class_label}\t\t{'%.1f' %(df[df['class'] == class_label]['duration'].sum()/25)}\n"
         res += f"总时间\t\t{df['duration'].sum()}\t\t{'%.1f' % (df['duration'].sum()/25)}\n\n"
 
-        if len(df[df['class'] == '技术工作']) > 0:
+        if len(df[df['class'] == '主线工作']) > 0:
             for x in df[df['class'] ==
-                        '技术工作'].groupby('target').apply(target_details):
+                        '主线工作'].groupby('target').apply(target_details):
+                res += x
+        if len(df[df['class'] == '支线工作']) > 0:
+            for x in df[df['class'] ==
+                        '支线工作'].groupby('target').apply(target_details):
                 res += x
         if len(df[df['class'] == '文献阅读']) > 0:
             for x in df[df['class'] ==
                         '文献阅读'].groupby('target').apply(target_details):
                 res += x
-        if len(df[df['class'] == '日常工作']) > 0:
+        if len(df[df['class'] == '日常安排']) > 0:
             for x in df[df['class'] ==
-                        '日常工作'].groupby('target').apply(target_details):
+                        '日常安排'].groupby('target').apply(target_details):
                 res += x
-        if len(df[df['class'] == '服务工作']) > 0:
+        if len(df[df['class'] == '服务打杂']) > 0:
             for x in df[df['class'] ==
-                        '服务工作'].groupby('target').apply(target_details):
+                        '服务打杂'].groupby('target').apply(target_details):
                 res += x
 
         self.journalPannel.setText(res)
