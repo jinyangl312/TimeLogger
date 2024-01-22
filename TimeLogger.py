@@ -340,7 +340,7 @@ class UI_TimeCounter(QtWidgets.QWidget):
 
         if self.onWork and int(cur_time - self.last_start_time + 1) % (25 * 60) == 0:
             self.showWork25min()
-        elif int(cur_time - self.last_start_time + 1) % (10 * 60) == 0:
+        if not self.noWork and int(cur_time - self.last_start_time + 1) % (10 * 60) == 0:
             self.showRest10min()
 
     def startWork(self):
