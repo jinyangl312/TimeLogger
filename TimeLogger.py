@@ -141,7 +141,11 @@ class Ui_MainWindow(object):
                                           localtime.tm_mon, localtime.tm_mday):
                 self.date = '%s-%s-%s' % (localtime.tm_year,
                                           localtime.tm_mon, localtime.tm_mday)  # 转换成日期
+                
+            # 刷新记录
             self.initTodayLogging("data/time_logging.sqlite")
+            self.targetBox.addItems(list(self.target_dict))
+            self.taskBox.addItems(list(self.task_dict))
             self.displayTodayLogging()
 
             # Start the counting
@@ -172,6 +176,10 @@ class Ui_MainWindow(object):
                               ] += (self.end_time-self.start_time - self.pause_duration)//60
             self.writeTimeLogging("data/time_logging.sqlite")
 
+            # 刷新记录
+            self.initTodayLogging("data/time_logging.sqlite")
+            self.targetBox.addItems(list(self.target_dict))
+            self.taskBox.addItems(list(self.task_dict))
             self.displayTodayLogging()
 
             self.pause_duration = 0
@@ -340,7 +348,7 @@ class UI_TimeCounter(QtWidgets.QWidget):
 
         if self.onWork and int(cur_time - self.last_start_time + 1) % (25 * 60) == 0:
             self.showWork25min()
-        elif int(cur_time - self.last_start_time + 1) % (10 * 60) == 0:
+        if not self.onWork and int(cur_time - self.last_start_time + 1) % (10 * 60) == 0:
             self.showRest10min()
 
     def startWork(self):
