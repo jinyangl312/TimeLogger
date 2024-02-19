@@ -12,13 +12,13 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
-        font.setPointSize(16)  # 括号里的数字可以设置成自己想要的字体大小
+        font.setPointSize(14)  # 括号里的数字可以设置成自己想要的字体大小
 
         self.w = UI_TimeCounter()
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowTitle('TimeLogger')
-        MainWindow.resize(600, 650)
+        MainWindow.resize(600, 660)
 
         self.startButtonOn = False  # 开关标志
         self.pauseButtonOn = False
@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 600))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 610))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
