@@ -12,13 +12,13 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
-        font.setPointSize(16)  # 括号里的数字可以设置成自己想要的字体大小
+        font.setPointSize(14)  # 括号里的数字可以设置成自己想要的字体大小
 
         self.w = UI_TimeCounter()
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowTitle('TimeLogger')
-        MainWindow.resize(600, 650)
+        MainWindow.resize(600, 660)
 
         self.startButtonOn = False  # 开关标志
         self.pauseButtonOn = False
@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
 
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 600))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(50, 10, 500, 610))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -320,8 +320,8 @@ class UI_TimeCounter(QtWidgets.QWidget):
         self.setLayout(layout)
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint |
                             QtCore.Qt.FramelessWindowHint)
-        self.last_start_time = time.time()
-        self.start_time = time.time()
+        self.work_recent_start = time.time()
+        self.pause_start = time.time()
         self.pause_duration = 0
         self.onWork = False
         self.onPause = False
@@ -336,26 +336,26 @@ class UI_TimeCounter(QtWidgets.QWidget):
     # https://blog.csdn.net/HG0724/article/details/116308195
     def showCurrentTime(self, timeLabel):
         cur_time = time.time()
-        if self.onWork or not self.onPause:
-            duration = int(cur_time - self.start_time - self.pause_duration)
+        if self.onWork:
+            duration = int(cur_time - self.work_start - self.pause_duration)
         else:
-            duration = int(cur_time - self.start_pause)
+            duration = int(cur_time - self.pause_start)
         # 设置系统时间的显示格式
         timeDisplay = '{:2d}:{:02d}:{:02d}'.format(
             duration//3600, duration // 60 % 60, duration % 60)
         # print(timeDisplay)
         timeLabel.setText(timeDisplay)
 
-        if self.onWork and int(cur_time - self.last_start_time + 1) % (25 * 60) == 0:
+        if self.onWork and int(cur_time - self.work_recent_start + 1) % (25 * 60) == 0:
             self.showWork25min()
-        if not self.onWork and int(cur_time - self.last_start_time + 1) % (10 * 60) == 0:
+        if not self.onWork and int(cur_time - self.pause_start + 1) % (10 * 60) == 0:
             self.showRest10min()
 
     def startWork(self):
         self.onWork = True
         self.onPause = False
-        self.start_time = time.time()
-        self.last_start_time = self.start_time
+        self.work_start = time.time()
+        self.work_recent_start = time.time()
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
@@ -366,7 +366,7 @@ class UI_TimeCounter(QtWidgets.QWidget):
     def startRest(self):
         self.onWork = False
         self.onPause = False
-        self.start_time = time.time()
+        self.pause_start = time.time()
         self.pause_duration = 0
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
@@ -378,8 +378,8 @@ class UI_TimeCounter(QtWidgets.QWidget):
     def resumeWork(self):
         self.onWork = True
         self.onPause = False
-        self.pause_duration = time.time() - self.start_pause
-        self.last_start_time = time.time()
+        self.work_recent_start = time.time()
+        self.pause_duration += time.time() - self.pause_start
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
@@ -390,7 +390,7 @@ class UI_TimeCounter(QtWidgets.QWidget):
     def startPause(self):
         self.onWork = False
         self.onPause = True
-        self.start_pause = time.time()
+        self.pause_start = time.time()
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei")  # 括号里可以设置成自己想要的其它字体
         font.setPointSize(18)  # 括号里的数字可以设置成自己想要的字体大小
